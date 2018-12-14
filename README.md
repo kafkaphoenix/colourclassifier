@@ -2,7 +2,7 @@
 Tensor Flow Colour Classifier based on the youtube tutorial by The Coding Train
 
 To try the classifier you need to replace apiKey: "yourkey" for your firebase apikey and set the follow rules in a real time database:
-
+```
 {
   "rules": {
     ".read": true,
@@ -33,3 +33,4 @@ To try the classifier you need to replace apiKey: "yourkey" for your firebase ap
     }
   }
 }
+```
