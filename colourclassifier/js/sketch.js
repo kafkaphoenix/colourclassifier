@@ -20,7 +20,7 @@ function setup() {
 
     // Initialize Firebase
     var config = {
-        apiKey: "AIzaSyDOseL1zAQ0tOavgHYZfezMdfk7SuVQ3cg",
+        apiKey: "yourkey",
         authDomain: "colorclassifier-90a84.firebaseapp.com",
         databaseURL: "https://colorclassifier-90a84.firebaseio.com",
         projectId: "colorclassifier-90a84",
