@@ -1,8 +1,14 @@
+//Train a model based on crowd source color data
+// Based on The Coding Train tutorial by Daniel Shiffman
+// Full tutorial playlist:
+// https://www.youtube.com/playlist?list=PLRqwX-V7Uu6bmMRCIoTi72aNWHo7epX4L
+
 let data;
 let xs, ys;
 
 let model;
 
+let labelP;
 let lossP;
 let rSlider, gSlider, bSlider;
 
@@ -15,19 +21,21 @@ let labelList = [
     'pink-ish',  
     'purple-ish',
     'brown-ish',
-    'grey-ish',
-];
+    'grey-ish'
+]
 
 function preload() {
-    data = loadJSON('https://api.myjson.com/bins/on0fa')
+    data = loadJSON('https://api.myjson.com/bins/on0fa');
+    //data = loadJSON('colorData2.json');
 }
 
 function setup() {
     //console.log(data.entries.length);
-    lossP = createP("Loss");
+    labelP = createP('');
+    lossP = createP('Loss');
     rSlider = createSlider(0, 255, 255);
-    gSlider = createSlider(0, 255, 255);
-    bSlider = createSlider(0, 255, 0);
+    gSlider = createSlider(0, 255, 0);
+    bSlider = createSlider(0, 255, 255);
 
     let colors = [];
     let labels = [];
@@ -42,7 +50,10 @@ function setup() {
     xs = tf.tensor2d(colors);
     //target
     let labelsTensor = tf.tensor1d(labels, 'int32');
-    ys = tf.oneHot(labelsTensor, 9);
+    ys = tf.oneHot(labelsTensor, 9).cast('float32'); 
+    /*one-hot is a group of bits among which the legal
+     combinations of values are only those with a single high (1)
+     bit and all the others low (0)*/
     //free memory
     labelsTensor.dispose();
 
@@ -56,22 +67,26 @@ function setup() {
     model = tf.sequential();
 
     //activation function
-    let hidden = tf.layers.dense({
+    const hidden = tf.layers.dense({
         units: 16,
         activation: 'sigmoid',
         inputDim: 3
     });
 
-    let output = tf.layers.dense({
-        units: 9, //No necesitas poner inputDim porque lo saca del anterior
-        activation: 'softmax',
+    const output = tf.layers.dense({
+        units: 9, //inputDim is inferred from the previous layers
+        activation: 'softmax' 
+        /*normalized exponential function is a generalization of the logistic
+        function that "squashes" a K-dimensional vector of arbitrary real values
+        to a K-dimensional vectorof real values, where each entry is in the interval
+        (0, 1), and all the entries add up to 1.*/
     });
 
     model.add(hidden);
     model.add(output);
 
     //optimization function
-    const lr = 0.2; //learning rate
+    const lr = 0.25; //learning rate
     const optimizer = tf.train.sgd(lr);
 
     //loss function
@@ -79,7 +94,8 @@ function setup() {
     //compile the model
     model.compile({
         optimizer: optimizer,
-        loss: 'categoricalCrossentropy'
+        loss: 'categoricalCrossentropy', //Used for classification
+        metrics: ['accuracy']
     });
 
     train().then(results => {
@@ -90,23 +106,23 @@ function setup() {
 async function train() {
     //train the model
     const options = {
-        epochs: 10,
+        epochs: 100,
         validationSplit: 0.1,
         shuffle: true,
         callbacks: {
-            // onTrainBegin: async () => console.log('training start'),
-            // onTrainEnd: () => console.log('training complete'),
-            onBatchEnd: tf.nextFrame(),
-            onEpochEnd: async (num, logs) => {
+            onTrainBegin: () => console.log('training start'),
+            onTrainEnd: () => console.log('training complete'),
+            onBatchEnd: async () => {
                 await tf.nextFrame();
-                console.log('Epoch: ' + num);
-                lossP.html('Loss: ' + logs.loss);
-                console.log('Loss: ' + logs);
+            },
+            onEpochEnd: (epoch, logs) => {
+                console.log('Epoch: ' + epoch);
+                lossP.html('Loss: ' + logs.loss.toFixed(5));
             }
         }
     }
 
-    return await model.fit(xs, ys, options);
+    return await model.fit(xs, ys, options);//train the model with those options
 }
 
 function draw() {
@@ -114,17 +130,22 @@ function draw() {
     let g = gSlider.value();
     let b = bSlider.value();
     background(r, g, b);
+    stroke(255)
+    strokeWeight(2);
+    line(frameCount % width, 0, frameCount % width, height);
+    
+    tf.tidy(() => { //cleans tensors
+        const xs = tf.tensor2d([
+            [r, g, b]
+        ]);
+        let results = model.predict(xs);
+        let index = results.argMax(1).dataSync()[0]; //maximum index
+        //console.log(index);
 
-    const xs = tf.tensor2d([
-        [r / 255,g / 255,b / 255]
-    ]);//normalize values
-    let results = model.predict(xs);
-    let index = results.argMax(1);
-    index.print();
-
-    let label = labelList[index];
-    index.print();
-    // stroke(255)
-    // strokeWeight(4);
-    // line(frameCount % 100, 0, frameCount % 100, height);
+        let label = labelList[index];
+        labelP.html(label);
+        
+    });
+    //index.print();
+    
 }
