@@ -26,7 +26,7 @@ let labelList = [
 
 function preload() {
     data = loadJSON('https://api.myjson.com/bins/on0fa');
-    //data = loadJSON('colorData2.json');
+    //data = loadJSON('https://jsonformatter.org/json-editor/63a578');
 }
 
 function setup() {
